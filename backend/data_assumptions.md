@@ -211,5 +211,3 @@ No live policy database is used in v1 (deterministic engine only).
 * AI used only for explanation, not computation
 
 ---
-* I can write a **judge Q&A defense sheet**
-* Or strengthen your trade-off economic explanation even further.
