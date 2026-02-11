@@ -18,7 +18,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/summary", summaryRouter);
 app.use("/simulate", simulateRouter);
 app.use("/explain", explainRouter);
-app.use("/tradeoff", tradeoffRouter); // Housing vs Transport Trade-Off endpoint
+app.use("/tradeoff", tradeoffRouter);
 app.use("/maps", mapsRouter);
 
 
