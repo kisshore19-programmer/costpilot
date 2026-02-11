@@ -1,0 +1,56 @@
+{
+  "kl_city_center_professional": {
+    "incomeMonthly": 6000,
+    "rentMonthly": 2500,
+    "utilitiesMonthly": 300,
+    "transportMonthly": 180,
+    "foodMonthly": 1000,
+    "debtMonthly": 400,
+    "subscriptionsMonthly": 100,
+    "savingsBalance": 12000
+  },
+
+  "kl_suburb_commuter": {
+    "incomeMonthly": 6000,
+    "rentMonthly": 1300,
+    "utilitiesMonthly": 250,
+    "transportMonthly": 750,
+    "foodMonthly": 1000,
+    "debtMonthly": 400,
+    "subscriptionsMonthly": 100,
+    "savingsBalance": 12000
+  },
+
+  "fresh_grad_room_rental": {
+    "incomeMonthly": 3500,
+    "rentMonthly": 800,
+    "utilitiesMonthly": 150,
+    "transportMonthly": 350,
+    "foodMonthly": 700,
+    "debtMonthly": 200,
+    "subscriptionsMonthly": 60,
+    "savingsBalance": 2500
+  },
+
+  "single_parent_edge_case": {
+    "incomeMonthly": 4200,
+    "rentMonthly": 1600,
+    "utilitiesMonthly": 300,
+    "transportMonthly": 500,
+    "foodMonthly": 1200,
+    "debtMonthly": 450,
+    "subscriptionsMonthly": 50,
+    "savingsBalance": 1000
+  },
+  
+  "b40_public_housing_worker": {
+    "incomeMonthly": 2800,
+    "rentMonthly": 600,
+    "utilitiesMonthly": 180,
+    "transportMonthly": 450,
+    "foodMonthly": 800,
+    "debtMonthly": 250,
+    "subscriptionsMonthly": 30,
+    "savingsBalance": 400
+  }
+}
