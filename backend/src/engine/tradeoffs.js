@@ -1,8 +1,8 @@
 export function compareHousingOptions(optionA, optionB) {
-  const totalHousingA = optionA.rentMonthly + optionA.transportMonthly;
-  const totalHousingB = optionB.rentMonthly + optionB.transportMonthly;
+  const totalA = (optionA.rentMonthly ?? 0) + (optionA.transportMonthly ?? 0);
+  const totalB = (optionB.rentMonthly ?? 0) + (optionB.transportMonthly ?? 0);
 
-  const costDifference = totalHousingB - totalHousingA;
+  const costDifference = totalB - totalA;
 
   const commuteDiff =
     (optionB.commuteTimeMins ?? 0) - (optionA.commuteTimeMins ?? 0);
