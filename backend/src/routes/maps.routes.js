@@ -1,5 +1,5 @@
 import express from "express";
-import { mockRoute } from "../engine/mockMaps.js";
+import { mockRoute } from "../engine/maps/mockMaps.js";
 
 export const mapsRouter = express.Router();
 
