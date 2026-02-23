@@ -79,8 +79,14 @@ const DashboardView: React.FC<{ userProfile: UserProfile; updateProfile?: (profi
     await updateProfile({ smartGoals: smartGoals.filter(g => g.id !== id) });
   };
 
+  // Linear interpolation helper (mirrors backend stressScore.js)
+  const lerp = (value: number, x1: number, x2: number, y1: number, y2: number) => {
+    if (value <= x1) return y1;
+    if (value >= x2) return y2;
+    return y1 + ((value - x1) / (x2 - x1)) * (y2 - y1);
+  };
+
   const calculateFinancialStressScore = (profile: UserProfile) => {
-    // 1. Inputs & Totals (Safe conversion, no negatives)
     const income = Math.max(0, profile.income);
     const rent = Math.max(0, profile.rent);
     const utilities = Math.max(0, profile.utilities || 0);
@@ -88,60 +94,49 @@ const DashboardView: React.FC<{ userProfile: UserProfile; updateProfile?: (profi
     const food = Math.max(0, profile.food || 0);
     const debt = Math.max(0, profile.debt || 0);
     const subs = Math.max(0, profile.subscriptions || 0);
-    const emergencySavings = Math.max(0, profile.emergencySavings || 0);
+    // Combine both savings pools for the buffer calculation
+    const totalSavings = Math.max(0, (profile.emergencySavings || 0) + (profile.savings || 0));
 
-    // Total Monthly Expenses (spending outflow)
     const totalExpenses = rent + utilities + transport + food + debt + subs;
 
-    // 2. Calculate Ratios with safety
-    const sr = income > 0 ? totalExpenses / income : (totalExpenses > 0 ? 1 : 0);
-    const sar = totalExpenses > 0 ? emergencySavings / totalExpenses : (emergencySavings > 0 ? 6 : 0);
-    const dr = income > 0 ? debt / income : (debt > 0 ? 1 : 0);
+    // --- Expense Ratio sub-score: 0=low stress → 100=high stress ---
+    const expenseRatio = income > 0 ? totalExpenses / income : 999;
+    let expenseSub: number;
+    if (expenseRatio <= 0.5) expenseSub = lerp(expenseRatio, 0, 0.5, 0, 10);
+    else if (expenseRatio <= 0.7) expenseSub = lerp(expenseRatio, 0.5, 0.7, 10, 30);
+    else if (expenseRatio <= 0.85) expenseSub = lerp(expenseRatio, 0.7, 0.85, 30, 60);
+    else if (expenseRatio <= 1.0) expenseSub = lerp(expenseRatio, 0.85, 1.0, 60, 85);
+    else expenseSub = Math.min(100, lerp(expenseRatio, 1.0, 1.2, 85, 100));
 
-    // 3. Convert Ratios to Scores (0-100)
-    let spendingScore = 0;
-    if (sr <= 0.50) spendingScore = 100;
-    else if (sr <= 0.70) spendingScore = 75;
-    else if (sr <= 0.90) spendingScore = 50;
-    else spendingScore = 25;
+    // --- Buffer months sub-score: more buffer → less stress ---
+    const bufferMonths = totalExpenses > 0 ? totalSavings / totalExpenses : 12;
+    let bufferSub: number;
+    if (bufferMonths >= 6) bufferSub = lerp(bufferMonths, 6, 12, 10, 0);
+    else if (bufferMonths >= 3) bufferSub = lerp(bufferMonths, 3, 6, 35, 10);
+    else if (bufferMonths >= 1) bufferSub = lerp(bufferMonths, 1, 3, 70, 35);
+    else bufferSub = lerp(bufferMonths, 0, 1, 100, 70);
 
-    let savingsScore = 0;
-    if (emergencySavings === 0) savingsScore = 0;
-    else if (sar >= 6) savingsScore = 100;
-    else if (sar >= 3) savingsScore = 75;
-    else if (sar >= 1) savingsScore = 50;
-    else savingsScore = 25;
+    // --- Debt ratio sub-score ---
+    const debtRatio = income > 0 ? debt / income : 0;
+    let debtSub: number;
+    if (debtRatio <= 0.1) debtSub = lerp(debtRatio, 0, 0.1, 0, 10);
+    else if (debtRatio <= 0.2) debtSub = lerp(debtRatio, 0.1, 0.2, 10, 35);
+    else if (debtRatio <= 0.35) debtSub = lerp(debtRatio, 0.2, 0.35, 35, 70);
+    else debtSub = Math.min(100, lerp(debtRatio, 0.35, 0.5, 70, 100));
 
-    let debtScore = 0;
-    if (dr <= 0.20) debtScore = 100;
-    else if (dr <= 0.40) debtScore = 75;
-    else if (dr <= 0.60) debtScore = 50;
-    else debtScore = 25;
+    // Weighted stress score: 0 = stress-free, 100 = critical (matches backend weights)
+    const raw = 0.55 * expenseSub + 0.25 * bufferSub + 0.20 * debtSub;
+    const score = Math.min(100, Math.max(0, Math.round(raw)));
 
-    // 4. Final Weighted Score & Categorization
-    const finalScore = (spendingScore * 0.40) + (savingsScore * 0.35) + (debtScore * 0.25);
-    const score = Math.min(100, Math.max(0, Math.round(finalScore)));
-
+    // Risk bands (match backend RISK_BANDS: 0-33 Low, 34-66 Moderate, 67-100 High)
     let category = "Critical";
     let color = "bg-red-500";
     let textColor = "text-red-400";
-    if (score >= 80) { category = "Low Stress"; color = "bg-emerald-500"; textColor = "text-emerald-400"; }
-    else if (score >= 60) { category = "Stable"; color = "bg-blue-500"; textColor = "text-blue-400"; }
-    else if (score >= 40) { category = "Moderate Stress"; color = "bg-amber-500"; textColor = "text-amber-400"; }
-    else if (score >= 20) { category = "High Stress"; color = "bg-orange-500"; textColor = "text-orange-400"; }
+    if (score <= 33) { category = "Low Stress"; color = "bg-emerald-500"; textColor = "text-emerald-400"; }
+    else if (score <= 66) { category = "Moderate Stress"; color = "bg-amber-500"; textColor = "text-amber-400"; }
+    // score > 66 → Critical (defaults above)
 
-    return {
-      score,
-      category,
-      color,
-      textColor,
-      breakdown: {
-        spending: spendingScore,
-        savings: savingsScore,
-        debt: debtScore
-      },
-      ratios: { sr, sar, dr }
-    };
+    return { score, category, color, textColor };
   };
 
   const getRealisticAnalysis = (goal: SmartGoal) => {
